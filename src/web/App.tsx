@@ -7,6 +7,7 @@ import Remember from './pages/Remember'
 import CapturesList from './pages/CapturesList'
 import CaptureDetail from './pages/CaptureDetail'
 import Ask from './pages/Ask'
+import Search from './pages/Search'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="captures" element={<CapturesList />} />
           <Route path="captures/:id" element={<CaptureDetail />} />
           <Route path="ask" element={<Ask />} />
+          <Route path="search" element={<Search />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

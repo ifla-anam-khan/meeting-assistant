@@ -60,3 +60,35 @@ export interface CaptureDetail {
   rememberItems: RememberItem[]
   contacts: Contact[]
 }
+
+export interface SearchSession {
+  id: string
+  name: string
+  summary: string | null
+  createdAt: string
+  type: 'session'
+}
+
+export interface SearchTask {
+  id: string
+  text: string
+  priority: TaskPriority
+  status: TaskStatus
+  dueDate: string | null
+  sessionId: string | null
+  type: 'task'
+}
+
+export interface SearchContact {
+  id: string
+  name: string
+  topic: string
+  sessionId: string | null
+  type: 'contact'
+}
+
+export interface SearchResults {
+  sessions: SearchSession[]
+  tasks: SearchTask[]
+  contacts: SearchContact[]
+}

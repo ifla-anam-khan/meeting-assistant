@@ -1,8 +1,15 @@
 import { Link } from 'react-router-dom'
-import { CalendarClockIcon, CheckCircle2Icon, CircleIcon, PlusCircleIcon, ChevronRightIcon } from 'lucide-react'
+import {
+  CalendarClockIcon,
+  CheckCircle2Icon,
+  CircleIcon,
+  PlusCircleIcon,
+  ChevronRightIcon,
+  FileTextIcon,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
-import { useTasks } from '@/lib/hooks'
+import { useTasks, useCaptures } from '@/lib/hooks'
 import type { Task } from '@/lib/types'
 
 function todayISO() {
@@ -58,12 +65,14 @@ export default function Home() {
   const accentText = isWork ? 'text-indigo-600' : 'text-emerald-600'
 
   const { data: allTasks, isLoading, isError } = useTasks(space, 'pending')
+  const { data: recentCaptures } = useCaptures(space)
   const today = todayISO()
 
   const overdue = (allTasks ?? []).filter((t) => t.dueDate && t.dueDate < today)
   const dueToday = (allTasks ?? []).filter((t) => t.dueDate === today)
   const upcoming = (allTasks ?? []).filter((t) => !t.dueDate || t.dueDate > today).slice(0, 5)
   const totalPending = allTasks?.length ?? 0
+  const latestCaptures = (recentCaptures ?? []).slice(0, 3)
 
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
@@ -136,6 +145,41 @@ export default function Home() {
               : 'Brain-dump your tasks by voice to get started.'}
           </p>
         </div>
+      )}
+
+      {/* Recent meetings (Work) / captures (Personal) */}
+      {latestCaptures.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {isWork ? 'Recent Meetings' : 'Recent Dumps'}
+            </h2>
+            <Link to="/captures" className={cn('text-xs font-medium', accentText)}>
+              See all
+            </Link>
+          </div>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border">
+            {latestCaptures.map((c) => (
+              <Link
+                key={c.id}
+                to={`/captures/${c.id}`}
+                className="flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+              >
+                <FileTextIcon size={16} className={cn('shrink-0 mt-0.5', accentText)} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                  {c.summary && (
+                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{c.summary}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+                <ChevronRightIcon size={14} className="text-muted-foreground shrink-0 mt-1" />
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Quick shortcuts */}

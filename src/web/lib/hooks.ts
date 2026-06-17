@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from './api'
-import type { Space, Session, Task, RememberItem, Contact, CaptureDetail } from './types'
+import type { Space, Session, Task, RememberItem, Contact, CaptureDetail, SearchResults } from './types'
 
 // ── Captures ───────────────────────────────────────────────────────────────
 
@@ -94,5 +94,16 @@ export function useContacts(space: Space) {
   return useQuery({
     queryKey: ['contacts', space],
     queryFn: () => apiGet<Contact[]>(`/contacts?space=${space}`),
+  })
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+
+export function useSearch(q: string, space: Space) {
+  return useQuery({
+    queryKey: ['search', q, space],
+    queryFn: () => apiGet<SearchResults>(`/search?q=${encodeURIComponent(q)}&space=${space}`),
+    enabled: q.trim().length >= 2,
+    staleTime: 30_000,
   })
 }

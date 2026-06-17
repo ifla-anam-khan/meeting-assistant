@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -7,6 +7,7 @@ import {
   MessageCircleIcon,
   SettingsIcon,
   FolderIcon,
+  SearchIcon,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,8 @@ const workNav = [
   { to: '/', icon: HomeIcon, label: 'Today', end: true },
   { to: '/capture', icon: PlusCircleIcon, label: 'Capture', end: false },
   { to: '/todo', icon: CheckSquareIcon, label: 'Tasks', end: false },
-  { to: '/remember', icon: BookOpenIcon, label: 'Remember', end: false },
+  { to: '/captures', icon: FolderIcon, label: 'Meetings', end: false },
+  { to: '/remember', icon: BookOpenIcon, label: 'Memory', end: false },
   { to: '/ask', icon: MessageCircleIcon, label: 'Ask', end: false },
 ]
 
@@ -31,6 +33,7 @@ export default function Layout() {
   const { space, setSpace } = useAppStore()
   const isWork = space === 'work'
   const nav = isWork ? workNav : personalNav
+  const navigate = useNavigate()
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -71,14 +74,23 @@ export default function Layout() {
           </button>
         </div>
 
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            cn('p-1', isActive ? (isWork ? 'text-indigo-600' : 'text-emerald-600') : 'text-muted-foreground')
-          }
-        >
-          <SettingsIcon size={20} />
-        </NavLink>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => navigate('/search')}
+            className="p-1 text-muted-foreground"
+            aria-label="Search"
+          >
+            <SearchIcon size={20} />
+          </button>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              cn('p-1', isActive ? (isWork ? 'text-indigo-600' : 'text-emerald-600') : 'text-muted-foreground')
+            }
+          >
+            <SettingsIcon size={20} />
+          </NavLink>
+        </div>
       </header>
 
       {/* ── Scrollable content ── */}
@@ -104,8 +116,8 @@ export default function Layout() {
               )
             }
           >
-            <Icon size={20} />
-            <span>{label}</span>
+            <Icon size={isWork ? 18 : 20} />
+            <span className={isWork ? 'text-[10px]' : 'text-xs'}>{label}</span>
           </NavLink>
         ))}
       </nav>

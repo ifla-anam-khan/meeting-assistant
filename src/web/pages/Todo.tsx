@@ -1,5 +1,15 @@
 import { useState } from 'react'
-import { CheckCircle2Icon, CircleIcon, Trash2Icon, PlusIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import {
+  CheckCircle2Icon,
+  CircleIcon,
+  Trash2Icon,
+  PlusIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+  CheckIcon,
+  XIcon,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useTasks, useUpdateTask, useDeleteTask, useCreateTask } from '@/lib/hooks'
@@ -25,16 +35,82 @@ function TaskItem({
   isWork,
   onToggle,
   onDelete,
+  onSaveEdit,
 }: {
   task: Task
   isWork: boolean
   onToggle: (id: string, newStatus: 'pending' | 'done') => void
   onDelete: (id: string) => void
+  onSaveEdit: (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal') => void
 }) {
   const [showSource, setShowSource] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(task.text)
+  const [editDate, setEditDate] = useState(task.dueDate ?? '')
+  const [editPriority, setEditPriority] = useState<'high' | 'normal'>(task.priority)
+
   const today = todayISO()
   const isOverdue = task.dueDate && task.dueDate < today && task.status === 'pending'
   const accentText = isWork ? 'text-indigo-600' : 'text-emerald-600'
+  const accentRing = isWork ? 'focus:ring-indigo-500' : 'focus:ring-emerald-500'
+
+  const handleSave = () => {
+    if (!editText.trim()) return
+    onSaveEdit(task.id, editText.trim(), editDate || null, editPriority)
+    setEditing(false)
+  }
+
+  const handleCancel = () => {
+    setEditText(task.text)
+    setEditDate(task.dueDate ?? '')
+    setEditPriority(task.priority)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="px-3 py-3 border-b border-border last:border-0 space-y-2">
+        <input
+          autoFocus
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel() }}
+          className={cn(
+            'w-full text-sm rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2',
+            accentRing,
+          )}
+        />
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={editDate}
+            onChange={(e) => setEditDate(e.target.value)}
+            className="text-xs rounded-lg border border-border bg-background px-2 py-1.5 text-foreground"
+          />
+          <select
+            value={editPriority}
+            onChange={(e) => setEditPriority(e.target.value as 'normal' | 'high')}
+            className="text-xs rounded-lg border border-border bg-background px-2 py-1.5 text-foreground"
+          >
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+          </select>
+          <div className="flex-1" />
+          <button onClick={handleCancel} className="p-1 text-muted-foreground" aria-label="Cancel">
+            <XIcon size={16} />
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!editText.trim()}
+            className={cn('p-1', editText.trim() ? accentText : 'text-muted-foreground')}
+            aria-label="Save"
+          >
+            <CheckIcon size={16} />
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn('px-3 border-b border-border last:border-0', task.status === 'done' && 'opacity-60')}>
@@ -86,6 +162,13 @@ function TaskItem({
         </div>
 
         <button
+          onClick={() => setEditing(true)}
+          className="shrink-0 text-muted-foreground active:scale-90 transition-transform p-1"
+          aria-label="Edit task"
+        >
+          <PencilIcon size={14} />
+        </button>
+        <button
           onClick={() => onDelete(task.id)}
           className="shrink-0 text-muted-foreground active:scale-90 transition-transform p-1"
           aria-label="Delete task"
@@ -107,6 +190,7 @@ export default function Todo() {
   const [showAdd, setShowAdd] = useState(false)
   const [newText, setNewText] = useState('')
   const [newPriority, setNewPriority] = useState<'normal' | 'high'>('normal')
+  const [newDueDate, setNewDueDate] = useState('')
 
   const { data: tasks, isLoading, isError } = useTasks(space, filter)
   const updateTask = useUpdateTask()
@@ -123,11 +207,21 @@ export default function Todo() {
     deleteTask.mutate({ id, space: task.space })
   }
 
+  const handleSaveEdit = (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal') => {
+    updateTask.mutate({ id, text, due_date: dueDate, priority })
+  }
+
   const handleAdd = async () => {
     if (!newText.trim()) return
-    await createTask.mutateAsync({ space, text: newText.trim(), priority: newPriority })
+    await createTask.mutateAsync({
+      space,
+      text: newText.trim(),
+      priority: newPriority,
+      due_date: newDueDate || undefined,
+    })
     setNewText('')
     setNewPriority('normal')
+    setNewDueDate('')
     setShowAdd(false)
   }
 
@@ -165,7 +259,13 @@ export default function Todo() {
               accentRing,
             )}
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="date"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+              className="text-xs rounded-lg border border-border bg-background px-2 py-1.5 text-foreground"
+            />
             <select
               value={newPriority}
               onChange={(e) => setNewPriority(e.target.value as 'normal' | 'high')}
@@ -234,6 +334,7 @@ export default function Todo() {
               isWork={isWork}
               onToggle={handleToggle}
               onDelete={handleDelete}
+              onSaveEdit={handleSaveEdit}
             />
           ))}
         </div>
