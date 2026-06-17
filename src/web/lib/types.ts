@@ -1,0 +1,62 @@
+export type Space = 'work' | 'personal'
+export type TaskStatus = 'pending' | 'done'
+export type TaskPriority = 'high' | 'normal'
+export type RememberType = 'decision' | 'fact' | 'follow-up' | 'open-question'
+
+export interface Session {
+  id: string
+  space: Space
+  type: 'meeting' | 'braindump'
+  name: string
+  summary: string | null
+  status: string
+  createdAt: string
+}
+
+export interface Task {
+  id: string
+  space: Space
+  sessionId: string | null
+  projectId: string | null
+  text: string
+  assignedBy: string | null
+  dueDate: string | null
+  reminderAt: string | null
+  snoozedUntil: string | null
+  priority: TaskPriority
+  recurrence: 'none' | 'daily' | 'weekly'
+  status: TaskStatus
+  sourceQuote: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RememberItem {
+  id: string
+  sessionId: string | null
+  space: Space
+  type: RememberType
+  text: string
+  sourceQuote: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Contact {
+  id: string
+  sessionId: string | null
+  space: Space
+  name: string
+  topic: string
+  notes: string | null
+  sourceQuote: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CaptureDetail {
+  session: Session & { rawTranscript: string }
+  tasks: Task[]
+  rememberItems: RememberItem[]
+  contacts: Contact[]
+}

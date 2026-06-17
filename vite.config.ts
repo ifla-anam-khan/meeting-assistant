@@ -9,7 +9,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
+      },
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable.png'],
       manifest: {
         name: 'Meeting Assistant',
@@ -32,13 +38,6 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
-      },
-      workbox: {
-        // Cache app shell only — never API routes or Cloudflare Access paths
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/cdn-cgi\//],
-        globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
-        runtimeCaching: [],
       },
     }),
   ],
