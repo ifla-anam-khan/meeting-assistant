@@ -1,0 +1,16 @@
+{
+  "name": "meeting-assistant",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/",
+    "not_found_handling": "single-page-application"
+  },
+  "triggers": {
+    // Runs every hour; the scheduled() handler checks if it's the user's configured 8am local time
+    "crons": ["0 * * * *"]
+  }
+  // Phase 1.B: add "d1_databases" or leave as Neon via env var DATABASE_URL
+  // Phase 2: add "vars": { "VAPID_PUBLIC_KEY": "...", "VAPID_SUBJECT": "..." }
+}
