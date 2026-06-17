@@ -2,7 +2,7 @@
 
 > **Living state file. Every skill/agent MUST read this first and update it after each unit of work.**
 > Companion docs: [meeting-assistant-plan.md](meeting-assistant-plan.md) (what to build) · [meeting-assistant-research.md](meeting-assistant-research.md) (how/with what — the build contract).
-> Last updated: 2026-06-17 · Current phase: **Phase 1 — not started (research complete)**
+> Last updated: 2026-06-17 · Current phase: **Phase 1.A — complete ✅ | Phase 1.B — next**
 
 ## How to use this file
 1. Read **Current Status** + **Next Action** below.
@@ -18,10 +18,10 @@ Status legend: ⬜ todo · 🟦 in progress · ✅ done · ⛔ blocked · ⏭️
 ## Current Status
 - ✅ Plan finalized (all features + workspaces).
 - ✅ Technical research complete and verified (see research doc §9 Final Stack).
-- ⬜ **Nothing built yet. No code, no accounts provisioned.**
+- ✅ **Phase 1.A complete** — project scaffolded, builds clean, committed to git.
 
 ## Next Action
-> **Start Phase 1, Task 1.1** (scaffold the Vite React-TS PWA). No external accounts are required to begin local scaffolding — the user-action items (accounts/keys) are only needed before deploy + live LLM/DB calls. Build local-first, wire credentials when reaching the integration tasks.
+> **Start Phase 1.B, Task 1.6** (Drizzle schema). Requires: Neon account + `DATABASE_URL` (pooled) + `DATABASE_URL_UNPOOLED`. If Neon isn't set up yet, schema file can be written locally first and migration applied once credentials exist.
 
 ---
 
@@ -57,11 +57,11 @@ Mark ✅ when done. Needed before the matching build task can be completed end-t
 Goal: installable PWA, workspace switcher, capture (record/paste)→extract→save, core read screens, data in Neon, behind Access. (Reminders/chat/projects = Phase 2.)
 
 ### 1.A Project setup
-- ⬜ **1.1** Scaffold Vite React-TS app; init git; `.gitignore` (`.dev.vars*`, `.env*`, `node_modules`, `dist`).
-- ⬜ **1.2** Add Tailwind v4 (`@tailwindcss/vite`) + shadcn init; base layout + theme.
-- ⬜ **1.3** Add vite-plugin-pwa (`autoUpdate`); manifest + 192/512/maskable icons; verify installability.
-- ⬜ **1.4** Add React Router (6 routes) + app shell with **Work/Personal switcher** (Zustand `persist` store).
-- ⬜ **1.5** `wrangler.jsonc`: static assets (`not_found_handling: single-page-application`), `nodejs_compat`, crons placeholder, bindings; `npm run build` → `wrangler dev` serves SPA.
+- ✅ **1.1** Scaffold Vite React-TS app; init git; `.gitignore`.
+- ✅ **1.2** Tailwind v4 (`@tailwindcss/vite`) + shadcn CSS variables + `cn()` util; base layout + theme.
+- ✅ **1.3** vite-plugin-pwa (`autoUpdate`); manifest + 192/512/maskable icons; SW excludes `/api/` + `/cdn-cgi/`.
+- ✅ **1.4** React Router v7 (8 routes) + Layout shell with Work/Personal switcher (Zustand `persist`).
+- ✅ **1.5** `wrangler.jsonc`: static assets SPA fallback, `nodejs_compat`, hourly cron, worker stub typed with `@cloudflare/workers-types`.
 
 ### 1.B Data layer
 - ⬜ **1.6** Drizzle schema for: Session, Task, RememberItem, Contact, Project, PushSubscription, Settings (see plan §6). Include `space`, timestamps, nullable FKs.
@@ -108,6 +108,7 @@ Goal: installable PWA, workspace switcher, capture (record/paste)→extract→sa
 - 2026-06-17 — Plan finalized (workspaces + full feature set).
 - 2026-06-17 — Research complete: 6 parallel research streams verified against official docs; wrote meeting-assistant-research.md (final stack locked). Key change: single Worker (not Pages+Worker); Neon serverless HTTP + Drizzle; Vercel AI SDK; web-push works in Workers via nodejs_compat.
 - 2026-06-17 — Created this BUILD-PROGRESS.md. Next: Phase 1 Task 1.1.
+- 2026-06-17 — Phase 1.A complete. Vite 6 + React 19 SPA built clean (297 KB JS / 13 KB CSS). 35 files committed to git. Stack: Tailwind v4, shadcn CSS vars, vite-plugin-pwa, React Router v7, Zustand persist, TanStack Query v5, Hono dep added, wrangler.jsonc configured. `npm run build` → `dist/` with SW + manifest verified. Next: Phase 1.B (Drizzle schema + Neon migration).
 
 ## Blockers
 - None currently.
