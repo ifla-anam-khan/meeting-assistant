@@ -8,9 +8,10 @@
     "not_found_handling": "single-page-application"
   },
   "triggers": {
-    // Runs every hour; the scheduled() handler checks if it's the user's configured 8am local time
     "crons": ["0 * * * *"]
+  },
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BGu0F-74-Ijnw08IeA7mF1ufQJ7ThgBMDM9RuODOSxVpuWaFknVDRmrqILdQK7T2zP6v5VI1DggtrxEPLxcDzoQ",
+    "VAPID_SUBJECT": "mailto:sharuk205343@gmail.com"
   }
-  // Phase 1.B: add "d1_databases" or leave as Neon via env var DATABASE_URL
-  // Phase 2: add "vars": { "VAPID_PUBLIC_KEY": "...", "VAPID_SUBJECT": "..." }
 }
