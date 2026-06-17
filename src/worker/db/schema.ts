@@ -74,4 +74,6 @@ export const settings = pgTable('settings', {
   digestTime: text('digest_time').notNull().default('08:00'),
   digestEnabled: boolean('digest_enabled').notNull().default(true),
   digestCombined: boolean('digest_combined').notNull().default(true),
+  eveningDigestEnabled: boolean('evening_digest_enabled').notNull().default(false),
+  eveningDigestTime: text('evening_digest_time').notNull().default('20:00'),
 })

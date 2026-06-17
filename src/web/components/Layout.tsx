@@ -7,6 +7,7 @@ import {
   MessageCircleIcon,
   SettingsIcon,
   FolderIcon,
+  FolderOpenIcon,
   SearchIcon,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
@@ -25,6 +26,7 @@ const personalNav = [
   { to: '/', icon: HomeIcon, label: 'Today', end: true },
   { to: '/capture', icon: PlusCircleIcon, label: 'Dump', end: false },
   { to: '/todo', icon: CheckSquareIcon, label: 'Tasks', end: false },
+  { to: '/projects', icon: FolderOpenIcon, label: 'Projects', end: false },
   { to: '/captures', icon: FolderIcon, label: 'History', end: false },
   { to: '/ask', icon: MessageCircleIcon, label: 'Ask', end: false },
 ]
@@ -116,8 +118,8 @@ export default function Layout() {
               )
             }
           >
-            <Icon size={isWork ? 18 : 20} />
-            <span className={isWork ? 'text-[10px]' : 'text-xs'}>{label}</span>
+            <Icon size={18} />
+            <span className="text-[10px]">{label}</span>
           </NavLink>
         ))}
       </nav>

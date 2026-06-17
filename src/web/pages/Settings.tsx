@@ -9,6 +9,8 @@ interface AppSettings {
   digestTime: string
   digestEnabled: boolean
   digestCombined: boolean
+  eveningDigestEnabled: boolean
+  eveningDigestTime: string
 }
 
 export default function Settings() {
@@ -107,6 +109,52 @@ export default function Settings() {
                 {saved && <CheckIcon size={14} className="text-emerald-600" />}
                 {saving && <span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full" />}
               </div>
+            </div>
+          )}
+
+          {/* Evening digest */}
+          {settings && (
+            <div className="border-t border-border">
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Evening digest</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">End-of-day summary of completed and pending tasks</p>
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={settings.eveningDigestEnabled}
+                  onClick={() => void saveSettings({ eveningDigestEnabled: !settings.eveningDigestEnabled })}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+                    settings.eveningDigestEnabled ? 'bg-indigo-600' : 'bg-muted',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform',
+                      settings.eveningDigestEnabled ? 'translate-x-5' : 'translate-x-0',
+                    )}
+                  />
+                </button>
+              </div>
+              {settings.eveningDigestEnabled && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Evening digest time</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Local time for the evening digest push</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={settings.eveningDigestTime}
+                      onChange={(e) => void saveSettings({ eveningDigestTime: e.target.value })}
+                      className="text-sm rounded-lg border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    {saved && <CheckIcon size={14} className="text-emerald-600" />}
+                    {saving && <span className="animate-spin inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full" />}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

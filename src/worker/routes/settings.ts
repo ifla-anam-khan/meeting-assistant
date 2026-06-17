@@ -27,6 +27,8 @@ app.patch(
       digestTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
       digestEnabled: z.boolean().optional(),
       digestCombined: z.boolean().optional(),
+      eveningDigestEnabled: z.boolean().optional(),
+      eveningDigestTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     }),
   ),
   async (c) => {

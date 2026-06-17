@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
-import { useTasks, useCaptures } from '@/lib/hooks'
+import { useTasks, useCaptures, useStats } from '@/lib/hooks'
 import type { Task } from '@/lib/types'
 
 function todayISO() {
@@ -66,6 +66,7 @@ export default function Home() {
 
   const { data: allTasks, isLoading, isError } = useTasks(space, 'pending')
   const { data: recentCaptures } = useCaptures(space)
+  const { data: stats } = useStats(space)
   const today = todayISO()
 
   const overdue = (allTasks ?? []).filter((t) => t.dueDate && t.dueDate < today)
@@ -83,6 +84,17 @@ export default function Home() {
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
       </div>
+
+      {/* Weekly stats widget */}
+      {stats && (
+        <div className={cn('flex items-center gap-1.5 text-xs font-medium', accentText)}>
+          <span>✓ {stats.tasksCompletedThisWeek} done this week</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">{stats.tasksPendingTotal} pending</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">{stats.capturesThisWeek} captures</span>
+        </div>
+      )}
 
       {/* Loading / error */}
       {isLoading && (

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq, and, asc, desc, sql } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import type { Env } from '../env'
 import { createDb } from '../db/client'
 import { tasks } from '../db/schema'
@@ -13,6 +13,8 @@ const CreateTaskSchema = z.object({
   text: z.string().min(1),
   priority: z.enum(['high', 'normal']).optional().default('normal'),
   due_date: z.string().nullable().optional(),
+  project_id: z.string().uuid().optional(),
+  recurrence: z.enum(['none', 'daily', 'weekly']).optional().default('none'),
 })
 
 const UpdateTaskSchema = z.object({
@@ -23,10 +25,11 @@ const UpdateTaskSchema = z.object({
   snoozed_until: z.string().nullable().optional(),
 })
 
-// GET /api/tasks?space=&status=
+// GET /api/tasks?space=&status=&project_id=
 app.get('/', async (c) => {
   const space = c.req.query('space')
   const statusFilter = c.req.query('status') // 'pending' | 'done' | undefined (all)
+  const projectId = c.req.query('project_id')
 
   if (!space || (space !== 'work' && space !== 'personal')) {
     return c.json({ error: 'space is required (work|personal)' }, 400)
@@ -37,6 +40,9 @@ app.get('/', async (c) => {
   const filters = [eq(tasks.space, space)]
   if (statusFilter === 'pending' || statusFilter === 'done') {
     filters.push(eq(tasks.status, statusFilter))
+  }
+  if (projectId) {
+    filters.push(eq(tasks.projectId, projectId))
   }
 
   // Sort: high priority first, then by due_date ascending (nulls last), then newest first
@@ -61,6 +67,8 @@ app.post('/', zValidator('json', CreateTaskSchema), async (c) => {
     text: body.text,
     priority: body.priority ?? 'normal',
     dueDate: body.due_date ?? null,
+    projectId: body.project_id ?? null,
+    recurrence: body.recurrence ?? 'none',
   }).returning()
 
   return c.json(task, 201)
@@ -88,6 +96,26 @@ app.patch('/:id', zValidator('json', UpdateTaskSchema), async (c) => {
 
   if (!updated) {
     return c.json({ error: 'Not found' }, 404)
+  }
+
+  if (body.status === 'done' && updated.recurrence !== 'none') {
+    const base = new Date()
+    const daysToAdd = updated.recurrence === 'daily' ? 1 : 7
+    base.setDate(base.getDate() + daysToAdd)
+    const nextDue = base.toISOString().split('T')[0]!
+
+    await db.insert(tasks).values({
+      space: updated.space,
+      text: updated.text,
+      priority: updated.priority,
+      recurrence: updated.recurrence,
+      projectId: updated.projectId,
+      status: 'pending',
+      dueDate: nextDue,
+      reminderAt: null,
+      snoozedUntil: null,
+      sourceQuote: null,
+    })
   }
 
   return c.json(updated)

@@ -9,6 +9,7 @@ import {
   PencilIcon,
   CheckIcon,
   XIcon,
+  ClockIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -36,18 +37,23 @@ function TaskItem({
   onToggle,
   onDelete,
   onSaveEdit,
+  onSnooze,
 }: {
   task: Task
   isWork: boolean
   onToggle: (id: string, newStatus: 'pending' | 'done') => void
   onDelete: (id: string) => void
-  onSaveEdit: (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal') => void
+  onSaveEdit: (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal', reminderAt: string | null) => void
+  onSnooze: (id: string) => void
 }) {
   const [showSource, setShowSource] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(task.text)
   const [editDate, setEditDate] = useState(task.dueDate ?? '')
   const [editPriority, setEditPriority] = useState<'high' | 'normal'>(task.priority)
+  const [editReminderAt, setEditReminderAt] = useState(
+    task.reminderAt ? new Date(task.reminderAt).toISOString().slice(0, 16) : ''
+  )
 
   const today = todayISO()
   const isOverdue = task.dueDate && task.dueDate < today && task.status === 'pending'
@@ -56,7 +62,7 @@ function TaskItem({
 
   const handleSave = () => {
     if (!editText.trim()) return
-    onSaveEdit(task.id, editText.trim(), editDate || null, editPriority)
+    onSaveEdit(task.id, editText.trim(), editDate || null, editPriority, editReminderAt || null)
     setEditing(false)
   }
 
@@ -64,6 +70,7 @@ function TaskItem({
     setEditText(task.text)
     setEditDate(task.dueDate ?? '')
     setEditPriority(task.priority)
+    setEditReminderAt(task.reminderAt ? new Date(task.reminderAt).toISOString().slice(0, 16) : '')
     setEditing(false)
   }
 
@@ -80,7 +87,7 @@ function TaskItem({
             accentRing,
           )}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             type="date"
             value={editDate}
@@ -95,7 +102,17 @@ function TaskItem({
             <option value="normal">Normal</option>
             <option value="high">High</option>
           </select>
-          <div className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground shrink-0">Remind at</label>
+          <input
+            type="datetime-local"
+            value={editReminderAt}
+            onChange={(e) => setEditReminderAt(e.target.value)}
+            className="text-xs rounded-lg border border-border bg-background px-2 py-1.5 text-foreground flex-1 min-w-0"
+          />
+        </div>
+        <div className="flex items-center gap-2 justify-end">
           <button onClick={handleCancel} className="p-1 text-muted-foreground" aria-label="Cancel">
             <XIcon size={16} />
           </button>
@@ -127,9 +144,16 @@ function TaskItem({
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className={cn('text-sm', task.status === 'done' && 'line-through')}>
-            {task.text}
-          </p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className={cn('text-sm', task.status === 'done' && 'line-through')}>
+              {task.text}
+            </p>
+            {task.recurrence !== 'none' && (
+              <span className="text-xs text-muted-foreground">
+                ↻ {task.recurrence === 'daily' ? 'Daily' : 'Weekly'}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {task.dueDate && (
               <span className={cn(
@@ -161,6 +185,15 @@ function TaskItem({
           )}
         </div>
 
+        {task.status === 'pending' && (
+          <button
+            onClick={() => onSnooze(task.id)}
+            className="shrink-0 text-muted-foreground active:scale-90 transition-transform p-1"
+            aria-label="Snooze task to tomorrow"
+          >
+            <ClockIcon size={14} />
+          </button>
+        )}
         <button
           onClick={() => setEditing(true)}
           className="shrink-0 text-muted-foreground active:scale-90 transition-transform p-1"
@@ -207,8 +240,19 @@ export default function Todo() {
     deleteTask.mutate({ id, space: task.space })
   }
 
-  const handleSaveEdit = (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal') => {
-    updateTask.mutate({ id, text, due_date: dueDate, priority })
+  const handleSaveEdit = (id: string, text: string, dueDate: string | null, priority: 'high' | 'normal', reminderAt: string | null) => {
+    updateTask.mutate({ id, text, due_date: dueDate, priority, reminder_at: reminderAt ?? undefined })
+  }
+
+  function tomorrowAt8() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    d.setHours(8, 0, 0, 0)
+    return d.toISOString()
+  }
+
+  const handleSnooze = (id: string) => {
+    updateTask.mutate({ id, snoozed_until: tomorrowAt8() })
   }
 
   const handleAdd = async () => {
@@ -335,6 +379,7 @@ export default function Todo() {
               onToggle={handleToggle}
               onDelete={handleDelete}
               onSaveEdit={handleSaveEdit}
+              onSnooze={handleSnooze}
             />
           ))}
         </div>

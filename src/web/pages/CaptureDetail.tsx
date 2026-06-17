@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeftIcon, ChevronDownIcon, ChevronUpIcon, CheckCircle2Icon, CircleIcon, UserIcon } from 'lucide-react'
+import { ArrowLeftIcon, ChevronDownIcon, ChevronUpIcon, CheckCircle2Icon, CircleIcon, UserIcon, ShareIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useCapture } from '@/lib/hooks'
@@ -87,6 +87,14 @@ export default function CaptureDetail() {
 
   const { data, isLoading, isError } = useCapture(id ?? '')
 
+  const handleShare = async () => {
+    if (!navigator.share || !data) return
+    await navigator.share({
+      title: data.session.name,
+      text: `${data.session.name}\n\n${data.session.summary ?? ''}\n\nAction items:\n${data.tasks.map((t) => `- ${t.text}`).join('\n')}`,
+    }).catch(() => {}) // user cancelled is fine
+  }
+
   if (isLoading) {
     return (
       <div className="p-4 text-sm text-muted-foreground">
@@ -119,10 +127,25 @@ export default function CaptureDetail() {
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
       {/* Header */}
       <div>
-        <Link to="/captures" className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-          <ArrowLeftIcon size={14} />
-          {isWork ? 'Meetings' : 'Brain Dumps'}
-        </Link>
+        <div className="flex items-center justify-between mb-3">
+          <Link to="/captures" className="flex items-center gap-1 text-sm text-muted-foreground">
+            <ArrowLeftIcon size={14} />
+            {isWork ? 'Meetings' : 'Brain Dumps'}
+          </Link>
+          {'share' in navigator && (
+            <button
+              onClick={() => void handleShare()}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all active:scale-95',
+                isWork ? 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30' : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30',
+              )}
+              aria-label="Share"
+            >
+              <ShareIcon size={14} />
+              Share
+            </button>
+          )}
+        </div>
         <h1 className="text-xl font-semibold text-foreground">{session.name}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}

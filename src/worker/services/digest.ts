@@ -1,4 +1,4 @@
-import { eq, and, lte, isNotNull } from 'drizzle-orm'
+import { eq, and, lte, isNotNull, isNull, or } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { tasks, settings } from '../db/schema'
 import type { PushPayload } from './push-send'
@@ -20,8 +20,9 @@ export interface DigestResult {
   payload: PushPayload | null
 }
 
+const notSnoozed = or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, new Date()))
+
 export async function buildDigest(db: Db, timezone = 'Asia/Kolkata'): Promise<DigestResult> {
-  // Read settings (single row, id=1; insert defaults if missing)
   let [config] = await db.select().from(settings).where(eq(settings.id, 1))
   if (!config) {
     ;[config] = await db
@@ -30,17 +31,26 @@ export async function buildDigest(db: Db, timezone = 'Asia/Kolkata'): Promise<Di
       .onConflictDoNothing()
       .returning()
     if (!config) {
-      // Still nothing — use defaults
-      config = { id: 1, digestTime: '08:00', digestEnabled: true, digestCombined: true }
+      config = {
+        id: 1,
+        digestTime: '08:00',
+        digestEnabled: true,
+        digestCombined: true,
+        eveningDigestEnabled: false,
+        eveningDigestTime: '20:00',
+      }
     }
   }
 
-  if (!config.digestEnabled) return { shouldSend: false, payload: null }
-
-  const digestHour = Number(config.digestTime.split(':')[0])
   const currentHour = localHour(timezone)
 
-  if (currentHour !== digestHour) return { shouldSend: false, payload: null }
+  const morningHour = Number(config.digestTime.split(':')[0])
+  const eveningHour = Number(config.eveningDigestTime.split(':')[0])
+
+  const isMorningMatch = config.digestEnabled && currentHour === morningHour
+  const isEveningMatch = config.eveningDigestEnabled && currentHour === eveningHour
+
+  if (!isMorningMatch && !isEveningMatch) return { shouldSend: false, payload: null }
 
   const today = todayISO()
 
@@ -48,12 +58,24 @@ export async function buildDigest(db: Db, timezone = 'Asia/Kolkata'): Promise<Di
     db
       .select()
       .from(tasks)
-      .where(and(eq(tasks.space, 'work'), eq(tasks.status, 'pending'), lte(tasks.dueDate, today))),
+      .where(
+        and(
+          eq(tasks.space, 'work'),
+          eq(tasks.status, 'pending'),
+          lte(tasks.dueDate, today),
+          notSnoozed,
+        ),
+      ),
     db
       .select()
       .from(tasks)
       .where(
-        and(eq(tasks.space, 'personal'), eq(tasks.status, 'pending'), lte(tasks.dueDate, today)),
+        and(
+          eq(tasks.space, 'personal'),
+          eq(tasks.status, 'pending'),
+          lte(tasks.dueDate, today),
+          notSnoozed,
+        ),
       ),
   ])
 
@@ -71,10 +93,14 @@ export async function buildDigest(db: Db, timezone = 'Asia/Kolkata'): Promise<Di
     body += `Personal: ${personalTasks.length} pending${personalOverdue > 0 ? ` (${personalOverdue} overdue)` : ''}.`
   }
 
+  const title = isEveningMatch && !isMorningMatch
+    ? `Evening wrap-up — ${total} task${total === 1 ? '' : 's'} pending`
+    : `Meeting Assistant — ${total} task${total === 1 ? '' : 's'} pending`
+
   return {
     shouldSend: true,
     payload: {
-      title: `Meeting Assistant — ${total} task${total === 1 ? '' : 's'} pending`,
+      title,
       body: body.trim(),
       url: '/',
     },
@@ -83,7 +109,6 @@ export async function buildDigest(db: Db, timezone = 'Asia/Kolkata'): Promise<Di
 
 export async function buildDueReminders(db: Db): Promise<PushPayload[]> {
   const now = new Date()
-  // Find tasks with reminder_at in the past 5 minutes (so hourly cron doesn't miss them)
   const windowStart = new Date(now.getTime() - 5 * 60 * 1000)
 
   const dueTasks = await db
@@ -94,7 +119,7 @@ export async function buildDueReminders(db: Db): Promise<PushPayload[]> {
         eq(tasks.status, 'pending'),
         isNotNull(tasks.reminderAt),
         lte(tasks.reminderAt, now),
-        // Don't re-fire snoozed reminders
+        or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now)),
       ),
     )
 

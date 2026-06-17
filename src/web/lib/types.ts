@@ -92,3 +92,20 @@ export interface SearchResults {
   tasks: SearchTask[]
   contacts: SearchContact[]
 }
+
+export interface Project {
+  id: string
+  space: Space
+  name: string
+  notes: string | null
+  status: 'active' | 'done'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WeeklyStats {
+  tasksCompletedThisWeek: number
+  tasksPendingTotal: number
+  capturesThisWeek: number
+  topProject: { id: string; name: string; taskCount: number } | null
+}

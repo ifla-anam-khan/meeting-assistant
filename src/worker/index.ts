@@ -11,6 +11,8 @@ import settingsRouter from './routes/settings'
 import searchRouter from './routes/search'
 import askRouter from './routes/ask'
 import exportRouter from './routes/export'
+import projectsRouter from './routes/projects'
+import statsRouter from './routes/stats'
 import { createDb } from './db/client'
 import { buildDigest, buildDueReminders } from './services/digest'
 import { sendPushToAll } from './services/push-send'
@@ -31,6 +33,8 @@ api.route('/settings', settingsRouter)
 api.route('/search', searchRouter)
 api.route('/ask', askRouter)
 api.route('/export', exportRouter)
+api.route('/projects', projectsRouter)
+api.route('/stats', statsRouter)
 
 api.get('/health', (c) => c.json({ ok: true }))
 

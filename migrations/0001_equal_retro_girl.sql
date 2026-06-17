@@ -1,0 +1,2 @@
+ALTER TABLE "settings" ADD COLUMN "evening_digest_enabled" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "settings" ADD COLUMN "evening_digest_time" text DEFAULT '20:00' NOT NULL;
