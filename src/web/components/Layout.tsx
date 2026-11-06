@@ -3,14 +3,15 @@ import {
   HomeIcon,
   PlusCircleIcon,
   CheckSquareIcon,
-  BookOpenIcon,
   MessageCircleIcon,
   SettingsIcon,
   FolderIcon,
   FolderOpenIcon,
   SearchIcon,
+  RssIcon,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
+import { useRecentErrors } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 
 const workNav = [
@@ -18,7 +19,7 @@ const workNav = [
   { to: '/capture', icon: PlusCircleIcon, label: 'Capture', end: false },
   { to: '/todo', icon: CheckSquareIcon, label: 'Tasks', end: false },
   { to: '/captures', icon: FolderIcon, label: 'Meetings', end: false },
-  { to: '/remember', icon: BookOpenIcon, label: 'Memory', end: false },
+  { to: '/feed', icon: RssIcon, label: 'AI News', end: false },
   { to: '/ask', icon: MessageCircleIcon, label: 'Ask', end: false },
 ]
 
@@ -27,7 +28,7 @@ const personalNav = [
   { to: '/capture', icon: PlusCircleIcon, label: 'Dump', end: false },
   { to: '/todo', icon: CheckSquareIcon, label: 'Tasks', end: false },
   { to: '/projects', icon: FolderOpenIcon, label: 'Projects', end: false },
-  { to: '/captures', icon: FolderIcon, label: 'History', end: false },
+  { to: '/feed', icon: RssIcon, label: 'AI News', end: false },
   { to: '/ask', icon: MessageCircleIcon, label: 'Ask', end: false },
 ]
 
@@ -36,6 +37,8 @@ export default function Layout() {
   const isWork = space === 'work'
   const nav = isWork ? workNav : personalNav
   const navigate = useNavigate()
+  const { data: recentErrors } = useRecentErrors()
+  const hasErrors = (recentErrors?.length ?? 0) > 0
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -87,10 +90,13 @@ export default function Layout() {
           <NavLink
             to="/settings"
             className={({ isActive }) =>
-              cn('p-1', isActive ? (isWork ? 'text-indigo-600' : 'text-emerald-600') : 'text-muted-foreground')
+              cn('relative p-1', isActive ? (isWork ? 'text-indigo-600' : 'text-emerald-600') : 'text-muted-foreground')
             }
           >
             <SettingsIcon size={20} />
+            {hasErrors && (
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-destructive ring-1 ring-background" />
+            )}
           </NavLink>
         </div>
       </header>

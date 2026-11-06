@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendIcon, SearchIcon, Loader2Icon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
+import { getToken } from '@/lib/api'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -21,6 +22,10 @@ export default function Ask() {
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const messagesRef = useRef<Message[]>([])
+
+  // Keep a ref in sync so sendMessage can access latest messages without stale closure
+  useEffect(() => { messagesRef.current = messages }, [messages])
 
   // Reset chat when space changes
   useEffect(() => {
@@ -47,11 +52,22 @@ export default function Ask() {
     abortRef.current = new AbortController()
 
     try {
+      const token = getToken()
       const res = await fetch('/api/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, space }),
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          question,
+          space,
+          // Send completed conversation history (up to 10 exchanges = 20 messages)
+          history: messagesRef.current
+            .filter((m) => !m.isStreaming && m.content)
+            .slice(-20)
+            .map(({ role, content }) => ({ role, content })),
+        }),
         signal: abortRef.current.signal,
       })
 
@@ -181,6 +197,7 @@ export default function Ask() {
       <div className="border-t border-border p-3 pb-safe">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isWork ? 'Ask about your meetings…' : 'Ask about your tasks…'}

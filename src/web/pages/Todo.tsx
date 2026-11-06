@@ -221,6 +221,7 @@ export default function Todo() {
 
   const [filter, setFilter] = useState<'pending' | 'done'>('pending')
   const [showAdd, setShowAdd] = useState(false)
+  const [quickText, setQuickText] = useState('')
   const [newText, setNewText] = useState('')
   const [newPriority, setNewPriority] = useState<'normal' | 'high'>('normal')
   const [newDueDate, setNewDueDate] = useState('')
@@ -253,6 +254,12 @@ export default function Todo() {
 
   const handleSnooze = (id: string) => {
     updateTask.mutate({ id, snoozed_until: tomorrowAt8() })
+  }
+
+  const handleQuickAdd = async () => {
+    if (!quickText.trim()) return
+    await createTask.mutateAsync({ space, text: quickText.trim(), priority: 'normal' })
+    setQuickText('')
   }
 
   const handleAdd = async () => {
@@ -288,7 +295,22 @@ export default function Todo() {
         </button>
       </div>
 
-      {/* Quick add */}
+      {/* Always-visible quick add */}
+      <div className="mx-4 mb-2">
+        <input
+          type="text"
+          value={quickText}
+          onChange={(e) => setQuickText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void handleQuickAdd() }}
+          placeholder="Add a task…"
+          className={cn(
+            'w-full text-sm rounded-lg border border-border bg-card px-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2',
+            accentRing,
+          )}
+        />
+      </div>
+
+      {/* Expanded quick add (date + priority) */}
       {showAdd && (
         <div className="mx-4 mb-3 rounded-xl border border-border bg-card p-3 space-y-2">
           <input

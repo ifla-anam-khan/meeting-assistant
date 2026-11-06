@@ -87,10 +87,18 @@ export interface SearchContact {
   type: 'contact'
 }
 
+export interface SearchMemoryItem {
+  id: string
+  text: string
+  type: RememberType
+  sessionId: string | null
+}
+
 export interface SearchResults {
   sessions: SearchSession[]
   tasks: SearchTask[]
   contacts: SearchContact[]
+  memory: SearchMemoryItem[]
 }
 
 export interface Project {
@@ -101,6 +109,15 @@ export interface Project {
   status: 'active' | 'done'
   createdAt: string
   updatedAt: string
+}
+
+export interface AppLog {
+  id: string
+  level: 'error' | 'warn' | 'info'
+  source: string
+  message: string
+  detail: string | null
+  createdAt: string
 }
 
 export interface WeeklyStats {

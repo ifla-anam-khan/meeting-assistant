@@ -1,6 +1,55 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPost, apiPatch, apiDelete } from './api'
-import type { Space, Session, Task, RememberItem, Contact, CaptureDetail, SearchResults, Project, WeeklyStats } from './types'
+import type { Space, Session, Task, RememberItem, Contact, CaptureDetail, SearchResults, Project, WeeklyStats, AppLog } from './types'
+
+// ── Remember item deletion ──────────────────────────────────────────────────
+
+export function useDeleteRememberItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, space }: { id: string; space: Space }) => {
+      void space
+      return apiDelete(`/remember/${id}`)
+    },
+    onSuccess: (_data, { space }) => {
+      queryClient.invalidateQueries({ queryKey: ['remember', space] })
+    },
+  })
+}
+
+// ── Contact deletion ────────────────────────────────────────────────────────
+
+export function useDeleteContact() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, space }: { id: string; space: Space }) => {
+      void space
+      return apiDelete(`/contacts/${id}`)
+    },
+    onSuccess: (_data, { space }) => {
+      queryClient.invalidateQueries({ queryKey: ['contacts', space] })
+    },
+  })
+}
+
+// ── Capture retry ───────────────────────────────────────────────────────────
+
+export function useRetryCapture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, space }: { id: string; space: Space }) => {
+      void space
+      return apiPost<{ session: Session }>(`/captures/${id}/retry`, {})
+    },
+    onSuccess: (_data, { id, space }) => {
+      queryClient.invalidateQueries({ queryKey: ['captures', id] })
+      queryClient.invalidateQueries({ queryKey: ['captures', space] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', space] })
+      queryClient.invalidateQueries({ queryKey: ['remember', space] })
+      queryClient.invalidateQueries({ queryKey: ['contacts', space] })
+    },
+  })
+}
 
 // ── Captures ───────────────────────────────────────────────────────────────
 
@@ -16,6 +65,37 @@ export function useCapture(id: string) {
     queryKey: ['captures', id],
     queryFn: () => apiGet<CaptureDetail>(`/captures/${id}`),
     enabled: !!id,
+    // Poll every 3 seconds while AI extraction is running in the background
+    refetchInterval: (query) =>
+      query.state.data?.session.status === 'processing' ? 3000 : false,
+  })
+}
+
+export function useRenameCapture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string; space: Space }) =>
+      apiPatch<Session>(`/captures/${id}`, { name }),
+    onSuccess: (_data, { id, space }) => {
+      queryClient.invalidateQueries({ queryKey: ['captures', id] })
+      queryClient.invalidateQueries({ queryKey: ['captures', space] })
+    },
+  })
+}
+
+export function useDeleteCapture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, space }: { id: string; space: Space }) => {
+      void space
+      return apiDelete(`/captures/${id}`)
+    },
+    onSuccess: (_data, { space }) => {
+      queryClient.invalidateQueries({ queryKey: ['captures', space] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', space] })
+      queryClient.invalidateQueries({ queryKey: ['remember', space] })
+      queryClient.invalidateQueries({ queryKey: ['contacts', space] })
+    },
   })
 }
 
@@ -159,5 +239,34 @@ export function useStats(space: Space) {
   return useQuery({
     queryKey: ['stats', space],
     queryFn: () => apiGet<WeeklyStats>(`/stats?space=${space}`),
+  })
+}
+
+// ── Logs ───────────────────────────────────────────────────────────────────
+
+export function useLogs(days = 10, level?: string) {
+  const params = new URLSearchParams({ days: String(days) })
+  if (level) params.set('level', level)
+  return useQuery({
+    queryKey: ['logs', days, level],
+    queryFn: () => apiGet<AppLog[]>(`/logs?${params}`),
+    staleTime: 30_000,
+  })
+}
+
+export function useRecentErrors() {
+  return useQuery({
+    queryKey: ['logs', 1, 'error'],
+    queryFn: () => apiGet<AppLog[]>('/logs?days=1&level=error'),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  })
+}
+
+export function useClearLogs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiDelete('/logs'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['logs'] }),
   })
 }

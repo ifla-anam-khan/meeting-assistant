@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, and, or, ilike } from 'drizzle-orm'
 import type { Env } from '../env'
 import { createDb } from '../db/client'
-import { sessions, tasks, contacts } from '../db/schema'
+import { sessions, tasks, contacts, rememberItems } from '../db/schema'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -21,7 +21,7 @@ app.get('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL)
   const pattern = `%${q}%`
 
-  const [matchedSessions, matchedTasks, matchedContacts] = await Promise.all([
+  const [matchedSessions, matchedTasks, matchedContacts, matchedMemory] = await Promise.all([
     db
       .select({
         id: sessions.id,
@@ -58,12 +58,19 @@ app.get('/', async (c) => {
           .where(and(eq(contacts.space, 'work'), or(ilike(contacts.name, pattern), ilike(contacts.topic, pattern))))
           .limit(10)
       : Promise.resolve([]),
+
+    db
+      .select({ id: rememberItems.id, text: rememberItems.text, type: rememberItems.type, sessionId: rememberItems.sessionId })
+      .from(rememberItems)
+      .where(and(eq(rememberItems.space, space), ilike(rememberItems.text, pattern)))
+      .limit(10),
   ])
 
   return c.json({
     sessions: matchedSessions.map((s) => ({ ...s, type: 'session' })),
     tasks: matchedTasks.map((t) => ({ ...t, type: 'task' })),
     contacts: matchedContacts.map((c) => ({ ...c, type: 'contact' })),
+    memory: matchedMemory,
   })
 })
 

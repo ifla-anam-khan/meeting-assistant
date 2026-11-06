@@ -1,21 +1,36 @@
-// Thin fetch wrapper around /api/*
-// Key behaviour: detects Cloudflare Access session-expiry (returns opaque redirect / login HTML)
-// and triggers a full-page reload so the user re-authenticates cleanly.
+const TOKEN_KEY = 'app_token'
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
+}
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY)
+}
+
+function redirectToLogin() {
+  clearToken()
+  window.location.replace('/login')
+}
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const token = getToken()
   const res = await fetch(`/api${path}`, {
     ...init,
-    redirect: 'manual',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
   })
 
-  // Cloudflare Access login redirect — reload to trigger re-auth
-  if (res.type === 'opaqueredirect' || res.redirected) {
-    window.location.reload()
-    return new Promise(() => {}) // never resolves; reload is underway
+  if (res.status === 401) {
+    redirectToLogin()
+    return new Promise(() => {})
   }
 
   if (!res.ok) {
@@ -47,6 +62,9 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function apiDelete(path: string): Promise<void> {
-  await apiFetch(path, { method: 'DELETE' })
+export async function apiDelete(path: string, body?: unknown): Promise<void> {
+  await apiFetch(path, {
+    method: 'DELETE',
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  })
 }

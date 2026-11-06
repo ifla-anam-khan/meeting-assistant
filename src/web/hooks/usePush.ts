@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { apiPost, apiDelete } from '@/lib/api'
+import { apiPost, apiDelete, getToken } from '@/lib/api'
 
 export type PushState = 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed' | 'loading'
 
@@ -41,7 +41,10 @@ export function usePush() {
 
     try {
       // Fetch VAPID public key from the server
-      const res = await fetch('/api/push/vapid-public-key', { credentials: 'include' })
+      const token = getToken()
+      const res = await fetch('/api/push/vapid-public-key', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) {
         setError('Push notifications are not configured on the server yet.')
         setState('unsubscribed')
@@ -84,7 +87,8 @@ export function usePush() {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.getSubscription()
       if (sub) {
-        await apiDelete('/push/unsubscribe')
+        const { endpoint } = sub.toJSON() as { endpoint: string }
+        await apiDelete('/push/unsubscribe', { endpoint })
         await sub.unsubscribe()
       }
       setState('unsubscribed')

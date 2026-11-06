@@ -34,7 +34,8 @@ export default function Projects() {
     setShowAdd(false)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, name: string) => {
+    if (!window.confirm(`Delete project "${name}"? Its tasks will remain in your task list.`)) return
     deleteProject.mutate({ id, space: 'personal' })
   }
 
@@ -166,7 +167,7 @@ export default function Projects() {
               </button>
 
               <button
-                onClick={() => handleDelete(project.id)}
+                onClick={() => handleDelete(project.id, project.name)}
                 className="shrink-0 text-muted-foreground active:scale-90 transition-transform p-1"
                 aria-label="Delete project"
               >

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, date, integer, boolean, jsonb } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, timestamp, date, integer, boolean, jsonb, real } from 'drizzle-orm/pg-core'
 
 export const sessions = pgTable('sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -67,6 +67,44 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   endpoint: text('endpoint').notNull().unique(),
   keys: jsonb('keys').notNull(), // { p256dh: string, auth: string }
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const appLogs = pgTable('app_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  level: text('level').notNull(),    // 'error' | 'warn' | 'info'
+  source: text('source').notNull(),  // route/service that emitted it
+  message: text('message').notNull(),
+  detail: text('detail'),            // stack trace or raw error body
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const feedSources = pgTable('feed_sources', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  category: text('category').notNull(), // 'papers'|'labs'|'chinese'|'academic'|'news'|'newsletter'|'tools'|'community'|'policy'
+  type: text('type').notNull(),         // 'rss'|'arxiv'|'hn'|'reddit'|'hf'
+  enabled: boolean('enabled').notNull().default(true),
+  priority: integer('priority').notNull().default(2), // 1|2|3
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const feedItems = pgTable('feed_items', {
+  id: text('id').primaryKey(),           // hash of url
+  sourceId: text('source_id').notNull().references(() => feedSources.id, { onDelete: 'cascade' }),
+  url: text('url').notNull().unique(),
+  title: text('title').notNull(),
+  description: text('description'),      // raw excerpt from source
+  summary: text('summary'),             // GPT-4o-mini summary
+  category: text('category').notNull(),
+  tags: text('tags'),                   // JSON array of strings
+  importance: real('importance').notNull().default(0.5), // 0.0-1.0
+  publishedAt: timestamp('published_at', { withTimezone: true }).notNull(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+  embedding: text('embedding'),         // JSON array of 256 floats
+  processed: boolean('processed').notNull().default(false),
+  author: text('author'),
+  extra: jsonb('extra'),               // upvotes, comments, paper_id, etc.
 })
 
 export const settings = pgTable('settings', {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { SearchIcon, FileTextIcon, CheckSquareIcon, UserIcon, Loader2Icon } from 'lucide-react'
+import { SearchIcon, FileTextIcon, CheckSquareIcon, UserIcon, Loader2Icon, BookOpenIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useSearch } from '@/lib/hooks'
@@ -30,7 +30,7 @@ export default function Search() {
 
   const { data, isFetching, isError } = useSearch(q, space)
 
-  const total = (data?.sessions.length ?? 0) + (data?.tasks.length ?? 0) + (data?.contacts.length ?? 0)
+  const total = (data?.sessions.length ?? 0) + (data?.tasks.length ?? 0) + (data?.contacts.length ?? 0) + (data?.memory.length ?? 0)
 
   return (
     <div className="flex flex-col max-w-2xl mx-auto">
@@ -40,6 +40,7 @@ export default function Search() {
           <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             ref={inputRef}
+            type="text"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             placeholder={isWork ? 'Search meetings, tasks, contacts…' : 'Search tasks and notes…'}
@@ -112,7 +113,7 @@ export default function Search() {
               {data!.tasks.map((t) => (
                 <Link
                   key={t.id}
-                  to="/todo"
+                  to={t.sessionId ? `/captures/${t.sessionId}` : '/todo'}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
@@ -127,6 +128,28 @@ export default function Search() {
                   {t.priority === 'high' && (
                     <span className="text-xs font-semibold text-orange-500 shrink-0">HIGH</span>
                   )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Memory — decisions, open questions, facts */}
+        {(data?.memory.length ?? 0) > 0 && (
+          <section>
+            <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              <BookOpenIcon size={12} />
+              Memory ({data!.memory.length})
+            </h2>
+            <div className="rounded-xl border border-border bg-card divide-y divide-border">
+              {data!.memory.map((m) => (
+                <Link
+                  key={m.id}
+                  to={m.sessionId ? `/captures/${m.sessionId}` : '/remember'}
+                  className="flex flex-col gap-0.5 px-4 py-3 hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{m.type.replace('-', ' ')}</span>
+                  <span className="text-sm text-foreground">{m.text}</span>
                 </Link>
               ))}
             </div>

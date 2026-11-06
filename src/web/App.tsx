@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import NewCapture from './pages/NewCapture'
@@ -11,12 +11,28 @@ import Search from './pages/Search'
 import Settings from './pages/Settings'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
+import Logs from './pages/Logs'
+import Feed from './pages/Feed'
+import Login from './pages/Login'
+import { getToken } from './lib/api'
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  if (!getToken()) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route
+          element={
+            <AuthGuard>
+              <Layout />
+            </AuthGuard>
+          }
+        >
           <Route index element={<Home />} />
           <Route path="capture" element={<NewCapture />} />
           <Route path="todo" element={<Todo />} />
@@ -28,6 +44,8 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
+          <Route path="logs" element={<Logs />} />
+          <Route path="feed" element={<Feed />} />
         </Route>
       </Routes>
     </BrowserRouter>

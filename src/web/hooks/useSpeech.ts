@@ -154,22 +154,33 @@ export function useSpeech(): UseSpeechReturn {
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
       const code = event.error
       if (code === 'no-speech' || code === 'aborted') {
-        return // Benign — onend restarts
+        return // Benign — onend will restart
       }
       if (code === 'network') {
+        // Back off on network errors so we don't spam retries
+        interimRef.current = ''
+        updateDisplay()
         backoffRef.current = Math.min(backoffRef.current * 2, 8000)
         return
       }
       intendToListenRef.current = false
+      interimRef.current = ''
       setIsListening(false)
       setError(code === 'not-allowed' || code === 'service-not-allowed' ? code : 'unknown')
       releaseWakeLock()
     }
 
     rec.onend = () => {
-      interimRef.current = ''
-      updateDisplay()
-      if (!intendToListenRef.current) return
+      if (!intendToListenRef.current) {
+        // Intentional stop — clear everything
+        interimRef.current = ''
+        updateDisplay()
+        return
+      }
+      // Normal 60s session timeout: keep interim text visible on screen while
+      // we restart immediately. The new session's results will overwrite it.
+      const delay = backoffRef.current > 250 ? backoffRef.current : 0
+      backoffRef.current = 250 // reset after a successful session
       restartTimerRef.current = setTimeout(() => {
         if (!intendToListenRef.current) return
         try {
@@ -177,7 +188,7 @@ export function useSpeech(): UseSpeechReturn {
         } catch {
           // Guard against InvalidStateError
         }
-      }, backoffRef.current)
+      }, delay)
     }
 
     try {

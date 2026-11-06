@@ -22,4 +22,13 @@ app.get('/', async (c) => {
   return c.json(rows)
 })
 
+// DELETE /api/contacts/:id
+app.delete('/:id', async (c) => {
+  const id = c.req.param('id')
+  const db = createDb(c.env.DATABASE_URL)
+  const [deleted] = await db.delete(contacts).where(eq(contacts.id, id)).returning()
+  if (!deleted) return c.json({ error: 'Not found' }, 404)
+  return c.body(null, 204)
+})
+
 export default app

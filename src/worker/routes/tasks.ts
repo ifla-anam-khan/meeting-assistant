@@ -23,6 +23,7 @@ const UpdateTaskSchema = z.object({
   due_date: z.string().nullable().optional(),
   priority: z.enum(['high', 'normal']).optional(),
   snoozed_until: z.string().nullable().optional(),
+  reminder_at: z.string().nullable().optional(),
 })
 
 // GET /api/tasks?space=&status=&project_id=
@@ -88,6 +89,7 @@ app.patch('/:id', zValidator('json', UpdateTaskSchema), async (c) => {
   if (body.due_date !== undefined) updates.dueDate = body.due_date
   if (body.priority !== undefined) updates.priority = body.priority
   if (body.snoozed_until !== undefined) updates.snoozedUntil = body.snoozed_until
+  if (body.reminder_at !== undefined) updates.reminderAt = body.reminder_at
 
   const [updated] = await db.update(tasks)
     .set(updates)
